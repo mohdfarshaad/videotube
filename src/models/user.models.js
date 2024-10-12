@@ -19,7 +19,7 @@ const userSchema = new Schema(
       lowercase: true,
       trim: true,
     },
-    fullname: {
+    fullName: {
       type: String,
       required: true,
       trim: true,
@@ -57,11 +57,11 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-userSchema.methods(async function (password) {
+userSchema.methods.comparePassword = async function (password) {
   return await bcrypt.compare(password, this.password);
-});
+};
 
-userSchema.methods(function generateAccessToken() {
+userSchema.methods.generateAccessToken = function () {
   return jwt.sign(
     {
       _id: this._id,
@@ -76,9 +76,9 @@ userSchema.methods(function generateAccessToken() {
       expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
     }
   );
-});
+};
 
-userSchema.methods(function refreshAccessToken() {
+userSchema.methods.refreshAccessToken = async function () {
   return jwt.sign(
     {
       _id: this._id,
@@ -90,6 +90,8 @@ userSchema.methods(function refreshAccessToken() {
       expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
     }
   );
-});
+};
 
-export const User = mongoose.Model("User", userSchema);
+
+
+export const User = mongoose.model("User", userSchema);
