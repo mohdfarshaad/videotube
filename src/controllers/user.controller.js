@@ -74,13 +74,13 @@ const loginUser = asyncHandler(async (req, res) => {
   // Validate user inputs
   const { username, email, password } = req.body;
 
-  if (!username || !email) {
+  if (!username && !email) {
     throw new ApiError(400, "Email or Username is required");
   }
 
   // find the user
 
-  const user = User.findOne({
+  const user = await User.findOne({
     $or: [{ email }, { username }],
   });
 
@@ -90,7 +90,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
   // Password check
 
-  const isPasswordValid = user.isPasswordCorrect(password);
+  const isPasswordValid = await user.isPasswordCorrect(password);
 
   if (!isPasswordValid) {
     throw new ApiError(401, "Password is incorrect");
@@ -100,7 +100,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const { accessToken, refreshToken } = generateAccessAndRefreshToken(user._id);
 
-  const loggedInuser = User.findById(user._id).select(
+  const loggedInUser = await User.findById(user._id).select(
     "-password -refreshToken"
   );
 
@@ -119,7 +119,7 @@ const loginUser = asyncHandler(async (req, res) => {
       new ApiResponse(
         200,
         {
-          user: [loggedInuser, accessToken, refreshToken],
+          user: [loggedInUser, accessToken, refreshToken],
         },
         "User logged in Successfully"
       )
@@ -163,9 +163,9 @@ const generateAccessAndRefreshToken = async (userId) => {
 
     return { accessToken, refreshToken };
   } catch (error) {
-    throw new ApiError(
-      500,
-      `Something went wrong while generating access and refresh token. error: ${error}`
+    console.log(
+      "Something went wrong while generating access and refresh token : ",
+      error
     );
   }
 };

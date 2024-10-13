@@ -1,12 +1,7 @@
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
 
-
-// Configure Cloudinary using environment variables
-
-
 const uploadOnCloudinary = async (uploadFilePath) => {
-
   try {
     if (!uploadFilePath) return "local file path is not found";
     //Uploading the file to cloudinary
@@ -14,13 +9,12 @@ const uploadOnCloudinary = async (uploadFilePath) => {
       resource_type: "auto",
     });
     if (!response) {
-      return null
+      return null;
     }
     fs.unlinkSync(uploadFilePath);
-    return response
+    return response;
   } catch (error) {
     console.log("Cloudinary upload failed", error);
-
   }
 };
 
