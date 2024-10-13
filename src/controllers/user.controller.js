@@ -151,4 +151,4 @@ const generateAccessAndRefreshToken = async (userId) => {
   }
 };
 
-export { registerUser, loginUser };
+export { registerUser, loginUser, logoutUser };
