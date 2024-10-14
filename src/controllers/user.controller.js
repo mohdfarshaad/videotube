@@ -98,7 +98,9 @@ const loginUser = asyncHandler(async (req, res) => {
 
   // Generating access and refresh Token
 
-  const { accessToken, refreshToken } = generateAccessAndRefreshToken(user._id);
+  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+    user._id
+  );
 
   const loggedInUser = await User.findById(user._id).select(
     "-password -refreshToken"
@@ -119,7 +121,9 @@ const loginUser = asyncHandler(async (req, res) => {
       new ApiResponse(
         200,
         {
-          user: [loggedInUser, accessToken, refreshToken],
+          user: loggedInUser,
+          accessToken,
+          refreshToken,
         },
         "User logged in Successfully"
       )
@@ -153,8 +157,8 @@ const logoutUser = asyncHandler(async (req, res) => {
 const generateAccessAndRefreshToken = async (userId) => {
   try {
     const user = await User.findById(userId);
-    const accessToken = user.generateAccessToken();
-    const refreshToken = user.generateRefreshToken();
+    const accessToken = await user.generateAccessToken();
+    const refreshToken = await user.generateRefreshToken();
 
     user.refreshToken = refreshToken;
     await user.save({
