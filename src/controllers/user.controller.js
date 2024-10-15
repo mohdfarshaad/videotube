@@ -170,6 +170,10 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   if (!user) {
     throw new ApiError(401, "Invalid Refresh Token");
   }
+
+  if (decodedToken !== user.refreshToken) {
+    throw new ApiError(401, "Invalid Refresh Token");
+  }
 });
 
 // Method to generate Access and Refresh Token
