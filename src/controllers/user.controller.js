@@ -172,8 +172,29 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   }
 
   if (decodedToken !== user.refreshToken) {
-    throw new ApiError(401, "Invalid Refresh Token");
+    throw new ApiError(401, "Refresh Token Expired or  Used");
   }
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  const { accessToken, newRefreshToken } = generateAccessAndRefreshToken(
+    user._id
+  );
+
+  res
+    .status(200)
+    .cookie(accessToken, options)
+    .cookie(newRefreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        { accessToken, refreshToken: newRefreshToken },
+        "Access token refreshed"
+      )
+    );
 });
 
 // Method to generate Access and Refresh Token
