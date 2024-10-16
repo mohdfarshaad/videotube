@@ -281,9 +281,7 @@ const updateCurrentUserDetails = asyncHandler(async (req, res) => {
 });
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
-  
   const avatarFile = req.files["avatar"] ? req.files["avatar"][0] : null;
-
 
   if (!avatarFile) {
     throw new ApiError(400, "Avatar is missing");
@@ -313,15 +311,19 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 });
 
 const updateUserCoverImage = asyncHandler(async (req, res) => {
-  const coverImageLocalPath = req.files?.path;
+  const coverImage = req.files["coverImage"]
+    ? req.files["coverImage"][0]
+    : null;
 
-  if (!coverImageLocalPath) {
+  if (!coverImage) {
     throw new ApiError(400, "Avatar is missing");
   }
 
-  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+  const coverImageLocalPath = coverImage.path;
 
-  if (!coverImage.url) {
+  const coverImageUpload = await uploadOnCloudinary(coverImageLocalPath);
+
+  if (!coverImageUpload.url) {
     throw new ApiError(500, "Error Uploadig file on cloudinary");
   }
 
@@ -329,7 +331,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     $set: {
       coverImage: coverImage.url,
     },
-  }).select("-password");
+  }).select("-password -refrehToken");
 
   return res
     .status(200)

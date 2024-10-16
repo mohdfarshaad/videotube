@@ -55,10 +55,12 @@ router.route("/update-user-avatar").post(
 
 router.route("/update-user-cover-image").post(
   verifyJWT,
-  upload.fields({
-    name: "coverImage",
-    maxCount: 1,
-  }),
+  upload.fields([
+    {
+      name: "coverImage",
+      maxCount: 1,
+    },
+  ]),
   updateUserCoverImage
 );
 
