@@ -1,3 +1,7 @@
+import dotenv from "dotenv";
+
+dotenv.config();
+
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.models.js";
@@ -246,23 +250,27 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 const refreshAccessToken = asyncHandler(async (req, res) => {
   const incomingRefreshToken =
     req.cookies.refreshToken || req.body.refreshToken;
+
   if (!incomingRefreshToken) {
     throw new ApiError(401, "Unauthorized request");
   }
+
   try {
-    const decodedToken = jwt.sign(
+    const decodedToken = jwt.verify(
       incomingRefreshToken,
       process.env.REFRESH_TOKEN_SECRET
     );
 
-    const user = await User.findById(decodedToken?._id);
+    const userId = decodedToken?._id;
+
+    const user = await User.findById(userId).select("-password");
 
     if (!user) {
-      throw new ApiError(401, "Invalid Refresh Token");
+      throw new ApiError(401, "No user found");
     }
 
-    if (decodedToken !== user.refreshToken) {
-      throw new ApiError(401, "Refresh Token Expired or  Used");
+    if (incomingRefreshToken.trim() !== user.refreshToken.trim()) {
+      throw new ApiError(401, "Refresh Token Expired or Used");
     }
 
     const options = {
