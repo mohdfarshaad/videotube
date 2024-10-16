@@ -9,6 +9,27 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 
+// Method to generate Access and Refresh Token
+const generateAccessAndRefreshToken = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    const accessToken = await user.generateAccessToken();
+    const refreshToken = await user.generateRefreshToken();
+
+    user.refreshToken = refreshToken;
+    await user.save({
+      validateBeforeSave: false,
+    });
+
+    return { accessToken, refreshToken };
+  } catch (error) {
+    console.log(
+      "Something went wrong while generating access and refresh token : ",
+      error
+    );
+  }
+};
+
 const registerUser = asyncHandler(async (req, res) => {
   // Take user data from frontend
   // validation - Not Empty ...
@@ -179,6 +200,57 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Password changed successfully"));
 });
 
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  const incomingRefreshToken =
+    req.cookies.refreshToken || req.body.refreshToken;
+
+  if (!incomingRefreshToken) {
+    throw new ApiError(401, "Unauthorized request");
+  }
+
+  try {
+    const decodedToken = jwt.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+
+    const userId = decodedToken?._id;
+
+    const user = await User.findById(userId).select("-password");
+
+    if (!user) {
+      throw new ApiError(401, "No user found");
+    }
+
+    if (incomingRefreshToken.trim() !== user.refreshToken.trim()) {
+      throw new ApiError(401, "Refresh Token Expired or Used");
+    }
+
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+
+    const { accessToken, newRefreshToken } = generateAccessAndRefreshToken(
+      user._id
+    );
+
+    res
+      .status(200)
+      .cookie(accessToken, options)
+      .cookie(newRefreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          { accessToken, refreshToken: newRefreshToken },
+          "Access token refreshed"
+        )
+      );
+  } catch (error) {
+    throw new ApiError(401, error?.message || "Invalid Refresh token");
+  }
+});
+
 const getCurrentUser = asyncHandler(async (req, res) => {
   return res
     .status(200)
@@ -254,78 +326,6 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, user, "Cover image updated successfully"));
 });
-
-const refreshAccessToken = asyncHandler(async (req, res) => {
-  const incomingRefreshToken =
-    req.cookies.refreshToken || req.body.refreshToken;
-
-  if (!incomingRefreshToken) {
-    throw new ApiError(401, "Unauthorized request");
-  }
-
-  try {
-    const decodedToken = jwt.verify(
-      incomingRefreshToken,
-      process.env.REFRESH_TOKEN_SECRET
-    );
-
-    const userId = decodedToken?._id;
-
-    const user = await User.findById(userId).select("-password");
-
-    if (!user) {
-      throw new ApiError(401, "No user found");
-    }
-
-    if (incomingRefreshToken.trim() !== user.refreshToken.trim()) {
-      throw new ApiError(401, "Refresh Token Expired or Used");
-    }
-
-    const options = {
-      httpOnly: true,
-      secure: true,
-    };
-
-    const { accessToken, newRefreshToken } = generateAccessAndRefreshToken(
-      user._id
-    );
-
-    res
-      .status(200)
-      .cookie(accessToken, options)
-      .cookie(newRefreshToken, options)
-      .json(
-        new ApiResponse(
-          200,
-          { accessToken, refreshToken: newRefreshToken },
-          "Access token refreshed"
-        )
-      );
-  } catch (error) {
-    throw new ApiError(401, error?.message || "Invalid Refresh token");
-  }
-});
-
-// Method to generate Access and Refresh Token
-const generateAccessAndRefreshToken = async (userId) => {
-  try {
-    const user = await User.findById(userId);
-    const accessToken = await user.generateAccessToken();
-    const refreshToken = await user.generateRefreshToken();
-
-    user.refreshToken = refreshToken;
-    await user.save({
-      validateBeforeSave: false,
-    });
-
-    return { accessToken, refreshToken };
-  } catch (error) {
-    console.log(
-      "Something went wrong while generating access and refresh token : ",
-      error
-    );
-  }
-};
 
 export {
   registerUser,
