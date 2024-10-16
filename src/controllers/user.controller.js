@@ -160,8 +160,16 @@ const logoutUser = asyncHandler(async (req, res) => {
 
 const changeCurrentPassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body;
-  const user = await User.findById(req.user?._id);
+
+  const userId = req.user?._id;
+
+  const user = await User.findById(userId).select("-password -refreshToken");
+
   const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+
+  if (!isPasswordCorrect) {
+    throw new ApiError(401, "incorrect old password");
+  }
 
   user.password = newPassword;
   user.save({ validateBeforeSave: false });

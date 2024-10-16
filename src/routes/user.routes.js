@@ -30,6 +30,6 @@ router.route("/login").post(loginUser);
 //secured route
 router.route("/logout").post(verifyJWT, logoutUser);
 router.route("/refresh-access-token").post(refreshAccessToken);
-router.route("/change-current-password").post(changeCurrentPassword);
+router.route("/change-current-password").post(verifyJWT, changeCurrentPassword);
 
 export default router;
