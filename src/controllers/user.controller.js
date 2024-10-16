@@ -259,20 +259,21 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 
 const updateCurrentUserDetails = asyncHandler(async (req, res) => {
   const { fullName, email } = req.body;
+
   if (!fullName && !email) {
     throw new ApiError(400, "Fullname or email is required");
   }
 
-  const user = User.findByIdAndUpdate(
+  const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
-        fullName,
-        email,
+        fullName: fullName,
+        email: email,
       },
     },
     { new: true }
-  ).select("-password");
+  ).select("-password -refreshToken");
 
   return res
     .status(200)
@@ -280,7 +281,15 @@ const updateCurrentUserDetails = asyncHandler(async (req, res) => {
 });
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
-  const avatarLocalPath = req.files?.path;
+  
+  const avatarFile = req.files["avatar"] ? req.files["avatar"][0] : null;
+
+
+  if (!avatarFile) {
+    throw new ApiError(400, "Avatar is missing");
+  }
+
+  const avatarLocalPath = avatarFile.path;
 
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar is missing");

@@ -33,11 +33,33 @@ router.route("/login").post(loginUser);
 
 //secured route
 router.route("/logout").post(verifyJWT, logoutUser);
+
 router.route("/refresh-access-token").post(refreshAccessToken);
+
 router.route("/change-current-password").post(verifyJWT, changeCurrentPassword);
+
 router.route("/current-user").get(verifyJWT, getCurrentUser);
+
 router.route("/update-user-details").post(verifyJWT, updateCurrentUserDetails);
-router.route("/update-user-avatar").get(verifyJWT, updateUserAvatar);
-router.route("/update-user-cover-image").get(verifyJWT, updateUserCoverImage);
+
+router.route("/update-user-avatar").post(
+  verifyJWT,
+  upload.fields([
+    {
+      name: "avatar",
+      maxCount: 1,
+    },
+  ]),
+  updateUserAvatar
+);
+
+router.route("/update-user-cover-image").post(
+  verifyJWT,
+  upload.fields({
+    name: "coverImage",
+    maxCount: 1,
+  }),
+  updateUserCoverImage
+);
 
 export default router;
