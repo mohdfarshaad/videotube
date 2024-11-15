@@ -1,6 +1,6 @@
 import { Router } from "express";
 import {
-  registerUser,
+  register,
   loginUser,
   logoutUser,
   refreshAccessToken,
@@ -26,7 +26,7 @@ router.route("/register").post(
       maxCount: 1,
     },
   ]),
-  registerUser
+  register
 );
 
 router.route("/login").post(loginUser);

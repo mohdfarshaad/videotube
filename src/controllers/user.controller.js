@@ -7,6 +7,7 @@ import { User } from "../models/user.models.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
+import { registerUser } from "../services/auth.service.js";
 
 const generateAccessAndRefreshToken = async (userId) => {
   try {
@@ -79,62 +80,19 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   }
 });
 
-const registerUser = asyncHandler(async (req, res) => {
-  const { fullName, username, email, password } = req.body;
+const register = asyncHandler(async (req, res) => {
+  const userData = req.body;
+  const files = req.files;
 
-  if (
-    [fullName, username, email, password].some((field) => field?.trim() === "")
-  ) {
-    throw new ApiError(400, "All fields are required");
-  }
-
-  const existingUser = await User.findOne({
-    $or: [{ username: username }, { email: email }],
-  });
-
-  if (existingUser) {
-    throw new ApiError(409, "User with this email or username already exists");
-  }
-
-  let coverImageLocalPath;
-
-  if (
-    req.files &&
-    Array.isArray(req.files.coverImage) &&
-    req.files.coverImage.length > 0
-  ) {
-    coverImageLocalPath = req.files.coverImage[0].path;
-  }
-
-  const avatarLocalPath = req.files?.avatar[0]?.path;
-
-  if (!avatarLocalPath) {
-    throw new ApiError(400, "Avatar File is required");
-  }
-
-  const avatar = await uploadOnCloudinary(avatarLocalPath);
-  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
-
-  const createdUser = await User.create({
-    fullName,
-    username: username.toLowerCase(),
-    email,
-    avatar: avatar.url,
-    coverImage: coverImage?.url || "",
-    password,
-  });
-
-  const userCreated = await User.findById(createdUser._id).select(
-    "-password -refreshToken"
-  );
+  const userCreated = await registerUser(userData, files);
 
   if (!userCreated) {
-    throw new ApiError(500, "Something went wrong while registering user");
+    throw new ApiError(500, "Something went wrong");
   }
 
   return res
     .status(201)
-    .json(new ApiResponse(201, userCreated, "User registered Successfully"));
+    .json(new ApiResponse(201, userCreated, "User registered successfully"));
 });
 
 const loginUser = asyncHandler(async (req, res) => {
@@ -332,7 +290,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 });
 
 export {
-  registerUser,
+  register,
   loginUser,
   logoutUser,
   refreshAccessToken,
