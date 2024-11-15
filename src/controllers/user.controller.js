@@ -7,7 +7,7 @@ import { User } from "../models/user.models.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
-import { registerUser } from "../services/auth.service.js";
+import { loginUser, registerUser } from "../services/auth.service.js";
 
 const generateAccessAndRefreshToken = async (userId) => {
   try {
@@ -95,43 +95,16 @@ const register = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, userCreated, "User registered successfully"));
 });
 
-const loginUser = asyncHandler(async (req, res) => {
-  // Login Steps
+const login = asyncHandler(async (req, res) => {
+  const userData = req.body;
 
-  // Validate user inputs
-  const { username, email, password } = req.body;
+  const loggedInUser = await loginUser(userData);
 
-  if (!username && !email) {
-    throw new ApiError(400, "All fields are required");
+  if (!loggedInUser) {
+    if (!loggedInUser) {
+      throw new ApiError(500, "Something went wrong");
+    }
   }
-
-  // find the user
-
-  const user = await User.findOne({
-    $or: [{ email }, { username }],
-  });
-
-  if (!user) {
-    throw new ApiError(404, "Unauthorized request");
-  }
-
-  // Password check
-
-  const isPasswordValid = await user.isPasswordCorrect(password);
-
-  if (!isPasswordValid) {
-    throw new ApiError(401, "Password is incorrect");
-  }
-
-  // Generating access and refresh Token
-
-  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
-    user._id
-  );
-
-  const loggedInUser = await User.findById(user._id).select(
-    "-password -refreshToken"
-  );
 
   // Cookie Options to make only modifiable in the server
   const options = {
@@ -157,7 +130,7 @@ const loginUser = asyncHandler(async (req, res) => {
     );
 });
 
-const logoutUser = asyncHandler(async (req, res) => {
+const logout = asyncHandler(async (req, res) => {
   // find user
   const userId = req.user._id;
   await User.findByIdAndUpdate(
@@ -291,8 +264,8 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
 export {
   register,
-  loginUser,
-  logoutUser,
+  login,
+  logout,
   refreshAccessToken,
   changeCurrentPassword,
   getCurrentUser,

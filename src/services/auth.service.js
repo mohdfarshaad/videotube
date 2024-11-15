@@ -56,4 +56,42 @@ const registerUser = async (userData, files) => {
   return userCreated;
 };
 
-export { registerUser };
+const loginUser = async (userData) => {
+  const { username, email, password } = userData;
+
+  if (!username && !email) {
+    throw new ApiError(400, "All fields are required");
+  }
+
+  // find the user
+
+  const user = await User.findOne({
+    $or: [{ email }, { username }],
+  });
+
+  if (!user) {
+    throw new ApiError(404, "Unauthorized request");
+  }
+
+  // Password check
+
+  const isPasswordValid = await user.isPasswordCorrect(password);
+
+  if (!isPasswordValid) {
+    throw new ApiError(401, "Password is incorrect");
+  }
+
+  // Generating access and refresh Token
+
+  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+    user._id
+  );
+
+  const loggedInUser = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
+
+  return loggedInUser;
+};
+
+export { registerUser, loginUser };
