@@ -1,6 +1,7 @@
 import { User } from "../models/user.models.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiError } from "../utils/ApiError.js";
+import { generateAccessAndRefreshTokenService } from "./token.service.js";
 
 const registerUser = async (userData, files) => {
   const { fullName, username, email, password } = userData;
@@ -83,15 +84,14 @@ const loginUser = async (userData) => {
 
   // Generating access and refresh Token
 
-  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
-    user._id
-  );
+  const { accessToken, refreshToken } =
+    await generateAccessAndRefreshTokenService(user._id);
 
   const loggedInUser = await User.findById(user._id).select(
     "-password -refreshToken"
   );
 
-  return loggedInUser;
+  return { loggedInUser, accessToken, refreshToken };
 };
 
 export { registerUser, loginUser };
