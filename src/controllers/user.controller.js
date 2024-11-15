@@ -6,9 +6,8 @@ import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.models.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import jwt from "jsonwebtoken";
 import { loginUser, registerUser } from "../services/auth.service.js";
-import { generateAccessAndRefreshTokenService } from "../services/token.service.js";
+import { refreshAccessTokenService } from "../services/token.service.js";
 
 const register = asyncHandler(async (req, res) => {
   const userData = req.body;
@@ -51,7 +50,7 @@ const login = asyncHandler(async (req, res) => {
       new ApiResponse(
         200,
         {
-          user: loggedInUser,
+          loggedInUser,
           accessToken,
           refreshToken,
         },
@@ -83,6 +82,35 @@ const logout = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "User logged Out"));
 });
 
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  const incomingRefreshToken =
+    req.cookies.refreshToken || req.body.refreshToken;
+
+  const { accessToken, refreshToken } =
+    await refreshAccessTokenService(incomingRefreshToken);
+
+  if (!(accessToken && refreshToken)) {
+    throw new ApiError(500, "Something went wrong");
+  }
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        { accessToken, refreshToken },
+        "Access token refreshed"
+      )
+    );
+});
+
 const changeCurrentPassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body;
 
@@ -109,35 +137,6 @@ const getCurrentUser = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, req.user, "User fetched Successfully"));
-});
-
-const refreshAccessToken = asyncHandler(async (req, res) => {
-  const incomingRefreshToken =
-    req.cookies.refreshToken || req.body.refreshToken;
-
-  const { accessToken, newRefreshToken } =
-    generateAccessAndRefreshTokenService(incomingRefreshToken);
-
-  if (!(accessToken && newRefreshToken)) {
-    throw new ApiError(500, "Something went wrong");
-  }
-
-  const options = {
-    httpOnly: true,
-    secure: true,
-  };
-
-  res
-    .status(200)
-    .cookie(accessToken, options)
-    .cookie(newRefreshToken, options)
-    .json(
-      new ApiResponse(
-        200,
-        { accessToken, refreshToken: newRefreshToken },
-        "Access token refreshed"
-      )
-    );
 });
 
 const updateCurrentUserDetails = asyncHandler(async (req, res) => {
