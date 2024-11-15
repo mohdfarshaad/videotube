@@ -1,5 +1,4 @@
 import dotenv from "dotenv";
-
 dotenv.config();
 
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -93,13 +92,12 @@ const registerUser = asyncHandler(async (req, res) => {
     $or: [{ username: username }, { email: email }],
   });
 
-  console.log(existingUser);
-
   if (existingUser) {
     throw new ApiError(409, "User with this email or username already exists");
   }
 
   let coverImageLocalPath;
+
   if (
     req.files &&
     Array.isArray(req.files.coverImage) &&
@@ -108,11 +106,7 @@ const registerUser = asyncHandler(async (req, res) => {
     coverImageLocalPath = req.files.coverImage[0].path;
   }
 
-  console.log("cover image", coverImageLocalPath);
-
   const avatarLocalPath = req.files?.avatar[0]?.path;
-
-  console.log("avatar local path", avatarLocalPath);
 
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar File is required");
@@ -120,8 +114,6 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const avatar = await uploadOnCloudinary(avatarLocalPath);
   const coverImage = await uploadOnCloudinary(coverImageLocalPath);
-
-  console.log(avatar, coverImage);
 
   const createdUser = await User.create({
     fullName,
