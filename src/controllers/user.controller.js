@@ -8,6 +8,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { loginUser, registerUser } from "../services/auth.service.js";
 import { refreshAccessTokenService } from "../services/token.service.js";
+import { changeUserPasswordService } from "../services/user.service.js";
 
 const register = asyncHandler(async (req, res) => {
   const userData = req.body;
@@ -112,25 +113,33 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 });
 
 const changeCurrentPassword = asyncHandler(async (req, res) => {
-  const { oldPassword, newPassword } = req.body;
-
+  const passwordData = req.body;
   const userId = req.user?._id;
 
-  const user = await User.findById(userId).select("-password -refreshToken");
-
-  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
-
-  if (!isPasswordCorrect) {
-    throw new ApiError(401, "incorrect old password");
+  if (!userId) {
+    throw new ApiError(404, "Unauthorized request");
   }
 
-  user.password = newPassword;
+  try {
+    const passwordChanged = await changeUserPasswordService(
+      passwordData,
+      userId
+    );
 
-  user.save({ validateBeforeSave: false });
+    if (!passwordChanged) {
+      throw new ApiError(
+        500,
+        "Something went wrong while changing the password"
+      );
+    }
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, {}, "Password changed successfully"));
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, "Password changed successfully"));
+  } catch (error) {
+    console.error("Error in change password route:", error.message);
+    throw new ApiError(500, error.message);
+  }
 });
 
 const getCurrentUser = asyncHandler(async (req, res) => {
