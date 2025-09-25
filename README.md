@@ -24,6 +24,3 @@ It provides REST endpoints for video upload, streaming, likes, comments, subscri
 - **JWT** – Authentication  
 
 ---
-
-## 📂 Project Structure
-+-
